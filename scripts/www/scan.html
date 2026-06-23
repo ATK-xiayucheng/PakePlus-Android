@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title-scan">扫码序列号管理</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="texts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <a href="index.html" class="btn-home" title="返回项目管理首页">🏠</a>
+      <h1 id="scan-title">扫码序列号管理 <small id="env-tag"></small></h1>
+    </div>
+    <div class="project-info-bar">
+      <span id="current-project-name">加载中...</span>
+      <a id="btn-back-home" href="index.html" class="btn-back-home" title="返回项目管理首页">🔙 返回项目管理</a>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label" id="stat-label-total">已扫描</span>
+        <span class="stat-value" id="stat-total">0</span>
+      </div>
+      <div class="stat success">
+        <span class="stat-label" id="stat-label-success">本次成功</span>
+        <span class="stat-value" id="stat-success">0</span>
+      </div>
+      <div class="stat fail">
+        <span class="stat-label" id="stat-label-dup">本次重复</span>
+        <span class="stat-value" id="stat-duplicate">0</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="scanner">
+    <div id="status" class="status idle">请在下方输入序列号，按回车提交（扫码枪也是回车提交）</div>
+    <div class="input-wrap">
+      <input
+        id="serial-input"
+        type="text"
+        placeholder="在此输入或粘贴序列号，回车提交..."
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+      />
+      <button id="btn-submit" type="button">提交</button>
+    </div>
+    <div id="scan-tip" class="tip">
+      温馨提示：操作完成后请及时保存数据，避免数据丢失。误触可能导致删除，请谨慎操作。
+    </div>
+  </section>
+
+  <section class="list-panel">
+    <div class="list-header">
+      <div class="list-title">
+        <h2 id="list-title">扫描记录</h2>
+        <span id="record-count" class="record-count"></span>
+      </div>
+      <div class="list-tools">
+        <input id="search" type="search" placeholder="搜索序列号..." />
+        <button id="btn-export" type="button" class="export">导出Excel</button>
+        <button id="btn-clear" type="button" class="danger">清空</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 108px; cursor: pointer; user-select: none;" id="th-index" title="点击切换排序" onclick="__sortByIndex();"><span id="th-index-label">序号 ↑</span></th>
+            <th id="th-serial">序列号</th>
+            <th id="th-time" style="width: 200px;">扫描时间</th>
+            <th id="th-action" style="width: 96px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" class="empty">暂无记录</div>
+    </div>
+  </section>
+
+  <footer class="footer-bar">
+    <span id="copyright-text-scan">© 2026 扫码序列号管理 · 版权所有</span>
+    <button id="btn-author" type="button" class="author-btn">关于作者 / 联系客服</button>
+  </footer>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- 重复号码大警告 -->
+  <div id="duplicate-alert" class="dup-alert hidden" role="alert" aria-modal="true">
+    <div class="dup-alert-mask"></div>
+    <div class="dup-alert-box">
+      <div class="dup-alert-icon">⚠</div>
+      <div id="dup-alert-title" class="dup-alert-title">序列号重复</div>
+      <div class="dup-alert-body">
+        <div id="dup-alert-label" class="dup-alert-label">重复号码</div>
+        <div class="dup-alert-serial" id="dup-serial"></div>
+      </div>
+      <div id="dup-alert-tip" class="dup-alert-tip">该序列号已存在于扫描记录，请确认后再扫描</div>
+      <button id="dup-close" type="button" class="dup-alert-btn">知道了</button>
+      <div class="dup-alert-countdown" id="dup-countdown">（<span id="dup-countdown-num">4</span> 秒后自动关闭）</div>
+    </div>
+  </div>
+
+  <!-- 二次确认弹窗（替代原生 confirm，避免弹窗被拦截导致页面异常） -->
+  <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-mask"></div>
+    <div class="modal-box">
+      <div class="modal-title" id="confirm-title">提示</div>
+      <div class="modal-body" id="confirm-body">确定要清空所有已扫描记录吗？</div>
+      <div class="modal-actions">
+        <button id="confirm-cancel" type="button" class="btn-secondary">取消</button>
+        <button id="confirm-ok" type="button" class="btn-primary">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 作者卡片弹窗 -->
+  <div id="author-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-mask" data-close-author="1"></div>
+    <div class="modal-box author-card">
+      <button type="button" class="author-close" data-close-author="1" aria-label="关闭">×</button>
+      <div class="author-avatar">
+        <img id="author-avatar-img-scan" src="author-assets/avatar.jpg" alt="作者头像">
+      </div>
+      <h3 id="author-name-scan" class="author-name">作者：夏宇铖</h3>
+      <div class="author-info">
+        <p id="author-phone-line-scan">📞 电话：<strong>15960360875</strong></p>
+        <p id="author-wechat-line-scan">💬 微信号：<strong>XiaLL68</strong></p>
+      </div>
+      <!-- 两个二维码并排 -->
+      <div class="qrcode-row">
+        <div class="qrcode-item">
+          <div id="qrcode-wechat-label-scan" class="qrcode-label">💬 添加微信</div>
+          <img id="author-qrcode-img-scan" src="author-assets/wechat-qrcode.svg" alt="微信添加二维码">
+          <p id="qrcode-wechat-desc-scan">扫码添加作者微信</p>
+        </div>
+        <div class="qrcode-item">
+          <div id="qrcode-reward-label-scan" class="qrcode-label">☕ 扫码打赏</div>
+          <img id="author-reward-img-scan" src="author-assets/reward-qrcode.svg" alt="打赏码">
+          <p id="qrcode-reward-desc-scan">扫码打赏支持作者</p>
+        </div>
+      </div>
+      <div class="author-actions">
+        <button id="btn-copy-wechat-scan" type="button" class="btn-secondary">复制微信号</button>
+        <button id="btn-copy-phone-scan" type="button" class="btn-secondary">复制电话</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 序号排序切换 — 独立内联脚本，确保一定可用
+    window.__indexSortAsc = true;
+    window.__sortByIndex = function() {
+      try {
+        window.__indexSortAsc = !window.__indexSortAsc;
+        var tbody = document.getElementById('tbody');
+        var label = document.getElementById('th-index-label');
+        if (!tbody) return;
+        var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+        if (rows.length === 0) return;
+        rows.reverse();
+        tbody.innerHTML = '';
+        for (var i = 0; i < rows.length; i++) {
+          tbody.appendChild(rows[i]);
+        }
+        // 从 TEXTS 取表头
+        var T = window.TEXTS;
+        var idxLabel = (T && T.TABLE && T.TABLE.indexHeader) || '序号';
+        if (label) label.textContent = idxLabel + ' ' + (window.__indexSortAsc ? '↑' : '↓');
+      } catch (e) { console.error('排序切换失败:', e); }
+    };
+
+    // 把 TEXTS 里的文字写进 DOM
+    function applyTextsToScan() {
+      var T = window.TEXTS;
+      if (!T) return;
+      var SYSTEM = T.SYSTEM || {};
+      var AUTHOR = T.AUTHOR || {};
+      var BUTTON = T.BUTTON || {};
+      var STATUS = T.STATUS || {};
+      var TABLE_ = T.TABLE || {};
+      var CLEAR = T.CLEAR || {};
+      var DUP = T.DUP || {};
+      var COPYRIGHT = T.COPYRIGHT || {};
+      var MISC = T.MISC || {};
+
+      // 页面标题
+      var titleEl = document.getElementById('page-title-scan');
+      if (titleEl) titleEl.textContent = SYSTEM.name || '扫码序列号管理';
+      var scanTitleEl = document.getElementById('scan-title');
+      if (scanTitleEl) {
+        scanTitle.innerHTML = (SYSTEM.name || '扫码序列号管理') + ' <small id="env-tag"></small>';
+      }
+
+      // 顶部状态文字
+      var statTotal = document.getElementById('stat-label-total');
+      if (statTotal) statTotal.textContent = STATUS.serialCountLabel || '已扫描';
+      var statSuccess = document.getElementById('stat-label-success');
+      if (statSuccess) statSuccess.textContent = STATUS.successCountLabel || '本次成功';
+      var statDup = document.getElementById('stat-label-dup');
+      if (statDup) statDup.textContent = STATUS.duplicateCountLabel || '本次重复';
+
+      // 项目名的初始文字 & 返回按钮
+      var cpName = document.getElementById('current-project-name');
+      if (cpName && STATUS.loading !== undefined) cpName.textContent = STATUS.loading;
+      var btnBack = document.getElementById('btn-back-home');
+      if (btnBack) btnBack.textContent = '🔙 ' + (BUTTON.goHome || '返回项目管理');
+
+      // 状态提示（首次显示）
+      var statusEl = document.getElementById('status');
+      if (statusEl && STATUS.idleHint) statusEl.textContent = STATUS.idleHint;
+
+      // 输入框 placeholder
+      var inputEl = document.getElementById('serial-input');
+      if (inputEl && SYSTEM.placeholderSerial) inputEl.setAttribute('placeholder', SYSTEM.placeholderSerial);
+
+      // 提交按钮
+      var btnSubmit = document.getElementById('btn-submit');
+      if (btnSubmit) btnSubmit.textContent = BUTTON.submit || '提交';
+
+      // 提示行
+      var tipEl = document.getElementById('scan-tip');
+      if (tipEl && SYSTEM.previewHint !== undefined) tipEl.textContent = SYSTEM.previewHint;
+
+      // 列表标题
+      var lt = document.getElementById('list-title');
+      if (lt) lt.textContent = TABLE_.sectionTitle || '扫描记录';
+
+      // 搜索框 placeholder
+      var searchEl = document.getElementById('search');
+      if (searchEl) searchEl.setAttribute('placeholder', TABLE_.placeholderSearch || '搜索序列号...');
+
+      // 导出按钮
+      var btnExport = document.getElementById('btn-export');
+      if (btnExport) btnExport.textContent = BUTTON.exportExcel || '导出Excel';
+
+      // 清空按钮
+      var btnClear = document.getElementById('btn-clear');
+      if (btnClear) btnClear.textContent = BUTTON.clear || '清空';
+
+      // 列表表头（序号表头的基础文本在排序切换里会被刷新）
+      var thIdx = document.getElementById('th-index-label');
+      if (thIdx) thIdx.textContent = (TABLE_.indexHeader || '序号') + ' ↑';
+      if (MISC.indexSortHint) {
+        var thIdx2 = document.getElementById('th-index');
+        if (thIdx2) thIdx2.setAttribute('title', MISC.indexSortHint);
+      }
+      var thSerial = document.getElementById('th-serial');
+      if (thSerial) thSerial.textContent = TABLE_.serialHeader || '序列号';
+      var thTime = document.getElementById('th-time');
+      if (thTime) thTime.textContent = TABLE_.timeHeader || '扫描时间';
+      var thAction = document.getElementById('th-action');
+      if (thAction) thAction.textContent = TABLE_.actionHeader || '操作';
+
+      // 空列表文字
+      var emptyEl = document.getElementById('empty');
+      if (emptyEl) emptyEl.textContent = TABLE_.empty || '暂无记录';
+
+      // 底部版权
+      var cp = document.getElementById('copyright-text-scan');
+      if (cp) cp.textContent = COPYRIGHT.text || '© 2026 扫码序列号管理 · 版权所有';
+      var btnAuthor = document.getElementById('btn-author');
+      if (btnAuthor) btnAuthor.textContent = AUTHOR.btnOpen || '关于作者 / 联系客服';
+
+      // 重复警告
+      var dupTitle = document.getElementById('dup-alert-title');
+      if (dupTitle) dupTitle.textContent = DUP.title || '序列号重复';
+      var dupLabel = document.getElementById('dup-alert-label');
+      if (dupLabel) dupLabel.textContent = DUP.label || '重复号码';
+      var dupTip = document.getElementById('dup-alert-tip');
+      if (dupTip) dupTip.textContent = DUP.tip || '该序列号已存在于扫描记录，请确认后再扫描';
+      var dupClose = document.getElementById('dup-close');
+      if (dupClose) dupClose.textContent = BUTTON.closeShort || '知道了';
+
+      // 二次确认弹窗
+      var cfTitle = document.getElementById('confirm-title');
+      if (cfTitle) cfTitle.textContent = CLEAR.title || '提示';
+      var cfBody = document.getElementById('confirm-body');
+      if (cfBody) cfBody.textContent = CLEAR.bodyConfirmClear || '确定要清空所有已扫描记录吗？';
+      var cfCancel = document.getElementById('confirm-cancel');
+      if (cfCancel) cfCancel.textContent = BUTTON.cancel || '取消';
+      var cfOk = document.getElementById('confirm-ok');
+      if (cfOk) cfOk.textContent = BUTTON.ok || '确定';
+
+      // 作者卡片
+      var authorNameEl = document.getElementById('author-name-scan');
+      if (authorNameEl) authorNameEl.textContent = (AUTHOR.titleText || '作者') + '：' + (AUTHOR.name || '');
+      var phoneLine = document.getElementById('author-phone-line-scan');
+      if (phoneLine) phoneLine.innerHTML = '📞 ' + (AUTHOR.labelPhone || '电话') + '：<strong>' + (AUTHOR.phone || '') + '</strong>';
+      var wechatLine = document.getElementById('author-wechat-line-scan');
+      if (wechatLine) wechatLine.innerHTML = '💬 ' + (AUTHOR.labelWechat || '微信号') + '：<strong>' + (AUTHOR.wechat || '') + '</strong>';
+      var qwLabel = document.getElementById('qrcode-wechat-label-scan');
+      if (qwLabel) qwLabel.textContent = '💬 ' + (AUTHOR.qrcodeWechatTitle || '添加微信');
+      var qwDesc = document.getElementById('qrcode-wechat-desc-scan');
+      if (qwDesc) qwDesc.textContent = AUTHOR.qrcodeWechatDesc || '扫码添加作者微信';
+      var qrLabel = document.getElementById('qrcode-reward-label-scan');
+      if (qrLabel) qrLabel.textContent = '☕ ' + (AUTHOR.qrcodeRewardTitle || '扫码打赏');
+      var qrDesc = document.getElementById('qrcode-reward-desc-scan');
+      if (qrDesc) qrDesc.textContent = AUTHOR.qrcodeRewardDesc || '扫码打赏支持作者';
+      var btnCopyWx = document.getElementById('btn-copy-wechat-scan');
+      if (btnCopyWx) btnCopyWx.textContent = AUTHOR.copyWechat || '复制微信号';
+      var btnCopyPh = document.getElementById('btn-copy-phone-scan');
+      if (btnCopyPh) btnCopyPh.textContent = AUTHOR.copyPhone || '复制电话';
+
+      // 作者卡片弹窗的图片资源（头像 / 微信二维码 / 打赏码）—— 从 AUTHOR_ASSETS 读取路径
+      var ASSETS = T.AUTHOR_ASSETS || {};
+      var avatarImg = document.getElementById('author-avatar-img-scan');
+      if (avatarImg && ASSETS.avatar) avatarImg.setAttribute('src', ASSETS.avatar);
+      var wxQrImg = document.getElementById('author-qrcode-img-scan');
+      if (wxQrImg && ASSETS.wechatQrcode) wxQrImg.setAttribute('src', ASSETS.wechatQrcode);
+      var rewardQrImg = document.getElementById('author-reward-img-scan');
+      if (rewardQrImg && ASSETS.rewardQrcode) rewardQrImg.setAttribute('src', ASSETS.rewardQrcode);
+
+      // 作者卡片弹窗：复制按钮 & 二维码放大
+      var wxVal = AUTHOR.wechat || 'XiaLL68';
+      var wxLabel = AUTHOR.labelWechat || '微信号';
+      var phVal = AUTHOR.phone || '15960360875';
+      var phLabel = AUTHOR.labelPhone || '电话';
+      var cpSuccess = (T.TOAST && T.TOAST.copiedPrefix) || '已复制';
+      var cpFail = (T.TOAST && T.TOAST.copyFailed) || '复制失败';
+
+      function showToastSimple(msg) {
+        var t = document.getElementById('toast');
+        if (!t) return;
+        t.textContent = msg;
+        t.className = 'toast success';
+        setTimeout(function() { t.className = 'toast hidden'; }, 1800);
+      }
+      function setupCopy(btnId, value, label) {
+        var btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(value).then(function() { showToastSimple(cpSuccess + label + '：' + value); });
+            } else {
+              var ta = document.createElement('textarea');
+              ta.value = value;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+              showToastSimple(cpSuccess + label + '：' + value);
+            }
+          } catch (e) { showToastSimple(cpFail); }
+        });
+      }
+      setupCopy('btn-copy-wechat-scan', wxVal, wxLabel);
+      setupCopy('btn-copy-phone-scan', phVal, phLabel);
+
+      // 二维码图片放大
+      var qrcodeImg = document.getElementById('author-qrcode-img-scan');
+      if (qrcodeImg) {
+        qrcodeImg.addEventListener('click', function() {
+          var src = this.getAttribute('src');
+          var overlay = document.createElement('div');
+          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(17,24,39,0.85);z-index:500;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+          var bigImg = document.createElement('img');
+          bigImg.setAttribute('src', src);
+          bigImg.style.cssText = 'max-width:80vw;max-height:80vh;border-radius:12px;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.3);';
+          overlay.appendChild(bigImg);
+          overlay.addEventListener('click', function() { try { document.body.removeChild(overlay); } catch(_) {} });
+          document.body.appendChild(overlay);
+        });
+      }
+    }
+
+    // 作者卡片：显示/关闭
+    function openAuthorScan() {
+      var m = document.getElementById('author-modal');
+      if (m) m.classList.remove('hidden');
+    }
+    function closeAuthorScan() {
+      var m = document.getElementById('author-modal');
+      if (m) m.classList.add('hidden');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        applyTextsToScan();
+        var btnAuthor = document.getElementById('btn-author');
+        if (btnAuthor) btnAuthor.addEventListener('click', openAuthorScan);
+        var authorModal = document.getElementById('author-modal');
+        if (authorModal) {
+          authorModal.addEventListener('click', function(e) {
+            if (e.target && e.target.getAttribute && e.target.getAttribute('data-close-author') === '1') closeAuthorScan();
+          });
+        }
+      });
+    } else {
+      applyTextsToScan();
+      var btnAuthor = document.getElementById('btn-author');
+      if (btnAuthor) btnAuthor.addEventListener('click', openAuthorScan);
+      var authorModal = document.getElementById('author-modal');
+      if (authorModal) {
+        authorModal.addEventListener('click', function(e) {
+          if (e.target && e.target.getAttribute && e.target.getAttribute('data-close-author') === '1') closeAuthorScan();
+        });
+      }
+    }
+  </script>
+  <script src="renderer.js"></script>
+</body>
+</html>
