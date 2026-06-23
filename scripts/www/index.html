@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">扫码管理系统 - 项目管理</title>
+  <script src="texts.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      min-height: 100vh;
+    }
+    .home-container {
+      max-width: 2000px;
+      margin: 0 auto;
+      padding: 40px 32px;
+    }
+    .home-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .home-header h1 {
+      font-size: 28px;
+      color: #1f2937;
+      margin-bottom: 8px;
+    }
+    .home-header p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .home-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .btn-create-project {
+      padding: 14px 32px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-settings {
+      padding: 14px 24px;
+      background: #fff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-settings:hover { background: #f3f4f6; transform: translateY(-1px); }
+    /* 设置输入项 */
+    .form-row { margin-bottom: 20px; }
+    .form-help { color: #6b7280; font-size: 13px; margin-top: 6px; }
+    .input-number {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 15px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s ease;
+    }
+    .input-number:focus { border-color: #6366f1; }
+    .form-actions-row { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-secondary {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+    }
+    .btn-primary {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: #4f46e5;
+      color: #fff;
+    }
+    .btn-secondary:hover { background: #f3f4f6; }
+    .btn-primary:hover { background: #4338ca; }
+    /* 作者卡片里的按钮：与扫码页作者卡片保持一致（浅灰背景） */
+    .author-card .btn-secondary {
+      background: #e5e7eb;
+      border: none;
+    }
+    .author-card .btn-secondary:hover { background: #d1d5db; }
+    /* 作者弹窗容器：与扫码页 .modal 保持一致的 flex 居中模式 */
+    .author-modal-wrap {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .author-modal-wrap.hidden { display: none; }
+    .author-modal-mask {
+      position: absolute;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.5);
+    }
+    .modal-title-top { font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 20px; }
+    .btn-create-project:hover {
+      background: #4338ca;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    /* 搜索框 */
+    .search-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .search-input {
+      width: 100%;
+      max-width: 420px;
+      padding: 12px 16px 12px 42px;
+      background: #fff;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 15px;
+      color: #1f2937;
+      outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 14px center;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+    .search-input::placeholder {
+      color: #9ca3af;
+    }
+    .search-empty {
+      text-align: center;
+      padding: 40px 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      width: 100%;
+    }
+    .search-empty .icon { font-size: 48px; margin-bottom: 12px; }
+    .search-empty h3 { font-size: 16px; color: #1f2937; margin-bottom: 6px; }
+    .search-empty p { font-size: 14px; color: #6b7280; }
+
+    .project-grid {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: flex-start;
+      width: 100%;
+    }
+    .project-grid .project-card {
+      flex: 0 0 auto;
+      width: 240px;
+    }
+    /* 窄屏：卡片宽度缩小，保证能并排 */
+    @media (max-width: 600px) {
+      .project-grid .project-card {
+        width: 46%;
+      }
+    }
+    @media (max-width: 380px) {
+      .project-grid {
+        gap: 10px;
+      }
+      .project-grid .project-card {
+        width: 100%;
+      }
+    }
+    .project-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .project-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      border-color: #a5b4fc;
+    }
+    .project-card.current {
+      border-color: #4f46e5;
+      background: #eef2ff;
+    }
+    .project-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .project-model {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .project-badge {
+      padding: 4px 10px;
+      background: #dbeafe;
+      color: #2563eb;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .project-card.current .project-badge {
+      background: #4f46e5;
+      color: #fff;
+    }
+    .project-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .project-info-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .project-info-item .icon {
+      font-size: 16px;
+    }
+    .project-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .btn-card-scan {
+      flex: 1;
+      padding: 10px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .btn-card-scan:hover {
+      background: #4338ca;
+    }
+    .btn-card-delete {
+      padding: 10px 14px;
+      background: #fff;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-card-delete:hover {
+      background: #fef2f2;
+      border-color: #f87171;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .empty-state .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    .empty-state h3 {
+      font-size: 18px;
+      color: #1f2937;
+      margin-bottom: 8px;
+    }
+    .empty-state p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+    /* 弹窗动画 - 避免打开时卡顿 */
+    .modal {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal.show .modal-mask {
+      animation: maskFadeIn 0.18s ease forwards;
+    }
+    .modal.show .modal-box {
+      animation: modalSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes maskFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translate(-50%, -45%) scale(0.96); }
+      to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    .modal-box {
+      will-change: transform, opacity;
+      backface-visibility: hidden;
+    }
+    .modal-mask {
+      will-change: opacity;
+      backface-visibility: hidden;
+    }
+    /* 新建项目弹窗 */
+    .modal-input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 15px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s ease;
+    }
+    .modal-input:focus {
+      border-color: #6366f1;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .required {
+      color: #ef4444;
+    }
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateZ(0);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      will-change: opacity;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      background: transparent; /* 默认无背景，避免 className 重置瞬间闪黑色 */
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #10b981; color: #fff; }
+    .toast.error { background: #ef4444; color: #fff; }
+    .toast.info { background: #3b82f6; color: #fff; }
+
+    /* 首页底部footer固定在底部 */
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .home-container {
+      flex: 1;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="home-container">
+    <div class="home-header">
+      <h1 id="home-title">📟 扫码管理系统</h1>
+      <p id="home-subtitle">选择或创建一个项目，开始扫码</p>
+    </div>
+
+    <div class="home-actions">
+      <button id="btn-create" class="btn-create-project">
+        <span>➕</span>
+        <span id="btn-create-text">新建项目</span>
+      </button>
+      <button id="btn-settings" class="btn-settings">
+        <span>⚙</span>
+        <span id="btn-settings-text">设置</span>
+      </button>
+    </div>
+
+    <div class="search-wrap">
+      <input id="search-input" type="text" class="search-input" placeholder="搜索项目型号..." autocomplete="off" />
+    </div>
+
+    <div id="project-list" class="project-grid"></div>
+    <div id="empty-state" class="empty-state" style="display: none;">
+      <div class="icon">📂</div>
+      <h3 id="empty-title">暂无项目</h3>
+      <p id="empty-tip">点击上方"新建项目"创建一个新项目开始扫码</p>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="toast"></div>
+
+  <!-- 新建项目弹窗 -->
+  <div id="new-project-modal" class="modal" style="display: none;">
+    <div class="modal-mask" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;" onclick="closeModal()"></div>
+    <div class="modal-box" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:32px;width:90%;max-width:420px;z-index:100;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <div id="modal-create-title" style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:24px;">新建项目</div>
+      <div class="form-group">
+        <label class="form-label"><span id="modal-model-label">型号</span> <span class="required">*</span></label>
+        <input id="input-model" type="text" class="modal-input" placeholder="例如：ABC-2024" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span id="modal-time-label">时间</span> <span class="required">*</span></label>
+        <input id="input-date" type="datetime-local" class="modal-input" />
+      </div>
+      <div style="display:flex;gap:12px;margin-top:24px;">
+        <button onclick="closeModal(true)" style="flex:1;padding:12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:15px;font-weight:600;cursor:pointer;">取消</button>
+        <button id="btn-create-confirm" onclick="confirmCreate()" style="flex:1;padding:12px;border:none;border-radius:8px;background:#4f46e5;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">创建并开始扫码</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div id="delete-modal" class="modal" style="display: none;">
+    <div class="modal-mask" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;" onclick="closeDeleteModal(true)"></div>
+    <div class="modal-box" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:32px;width:90%;max-width:360px;z-index:100;box-shadow:0 20px 60px rgba(0,0,0,0.2);text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+      <div id="modal-delete-title" style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;">确认删除</div>
+      <div id="delete-message" style="color:#6b7280;font-size:14px;margin-bottom:24px;">确定要删除该项目吗？删除后数据无法恢复。</div>
+      <div style="display:flex;gap:12px;">
+        <button onclick="closeDeleteModal(true)" style="flex:1;padding:12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:15px;font-weight:600;cursor:pointer;">取消</button>
+        <button onclick="confirmDelete()" style="flex:1;padding:12px;border:none;border-radius:8px;background:#ef4444;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settings-modal" style="display:none; position:fixed; inset:0; z-index:99;">
+    <div style="position:absolute; inset:0; background:rgba(0,0,0,0.5);" onclick="closeSettings()"></div>
+    <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:16px; padding:28px; width:90%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <div id="settings-modal-title" class="modal-title-top">设置</div>
+      <div class="form-row">
+        <label class="form-label"><span id="settings-countdown-label">重复弹窗倒计时（秒）</span><span class="required"> *</span></label>
+        <input id="settings-countdown" type="number" class="input-number" min="1" max="300" step="1" />
+        <div id="settings-countdown-hint" class="form-help">当扫描到重复的序列号时，提示弹窗将在该秒数后自动关闭。可输入 1 ~ 300 秒，默认 4 秒。</div>
+      </div>
+      <div class="form-actions-row">
+        <button class="btn-secondary" onclick="closeSettings()">取消</button>
+        <button id="btn-settings-confirm" class="btn-primary" onclick="confirmSettings()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部版权栏 -->
+  <footer class="footer-bar">
+    <span id="copyright-text">© 2026 扫码序列号管理 · 版权所有</span>
+    <button id="btn-author" type="button" class="author-btn">关于作者 / 联系客服</button>
+  </footer>
+
+  <!-- 作者卡片弹窗 -->
+  <div id="author-modal" class="author-modal-wrap hidden" role="dialog" aria-modal="true">
+    <div class="author-modal-mask" data-close-author="1"></div>
+    <div class="modal-box author-card">
+      <button type="button" class="author-close" data-close-author="1" aria-label="关闭">×</button>
+      <div class="author-avatar">
+        <img id="author-avatar-img" src="author-assets/avatar.jpg" alt="作者头像">
+      </div>
+      <h3 id="author-name" class="author-name">作者：夏宇铖</h3>
+      <div class="author-info">
+        <p id="author-phone-line">📞 电话：<strong>15960360875</strong></p>
+        <p id="author-wechat-line">💬 微信号：<strong>XiaLL68</strong></p>
+      </div>
+      <!-- 两个二维码并排 -->
+      <div class="qrcode-row">
+        <div class="qrcode-item">
+          <div id="qrcode-wechat-label" class="qrcode-label">💬 添加微信</div>
+          <img id="author-qrcode-img" src="author-assets/wechat-qrcode.svg" alt="微信添加二维码">
+          <p id="qrcode-wechat-desc">扫码添加作者微信</p>
+        </div>
+        <div class="qrcode-item">
+          <div id="qrcode-reward-label" class="qrcode-label">☕ 扫码打赏</div>
+          <img id="author-reward-img" src="author-assets/reward-qrcode.svg" alt="打赏码">
+          <p id="qrcode-reward-desc">扫码打赏支持作者</p>
+        </div>
+      </div>
+      <div class="author-actions">
+        <button id="btn-copy-wechat" type="button" class="btn-secondary">复制微信号</button>
+        <button id="btn-copy-phone" type="button" class="btn-secondary">复制电话</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== 文字统一来自 texts.js（window.TEXTS）==========
+    function _t(path) {
+      try {
+        var parts = path.split('.');
+        var obj = window.TEXTS;
+        for (var i = 0; i < parts.length; i++) {
+          if (obj == null || obj[parts[i]] == null) return null;
+          obj = obj[parts[i]];
+        }
+        return obj;
+      } catch (e) { return null; }
+    }
+    function _setText(id, text) {
+      var el = document.getElementById(id);
+      if (el && text != null && text !== undefined) el.textContent = text;
+    }
+
+    // 把首页所有可见的中文文字，从 TEXTS 读取并写进 DOM
+    function applyTextsToHome() {
+      var T = window.TEXTS;
+      if (!T) return;
+
+      // 页面标题（浏览器标签栏）
+      if (T.SYSTEM && T.SYSTEM.pageTitle) {
+        var titleEl = document.getElementById('page-title') || document.querySelector('title');
+        if (titleEl) titleEl.textContent = T.SYSTEM.pageTitle;
+      }
+
+      // 顶部大标题 + 副标题
+      var homeTitle = (T.SYSTEM && T.SYSTEM.homeName) ? T.SYSTEM.homeName : null;
+      if (homeTitle) _setText('home-title', '📟 ' + homeTitle);
+      if (T.SYSTEM && T.SYSTEM.homeSubtitle) _setText('home-subtitle', T.SYSTEM.homeSubtitle);
+
+      // 按钮文字
+      if (T.BUTTON) {
+        _setText('btn-create-text', T.BUTTON.createProject || '新建项目');
+        _setText('btn-settings-text', T.BUTTON.settings || '设置');
+      }
+
+      // 空状态
+      if (T.SYSTEM) {
+        _setText('empty-title', T.SYSTEM.emptyProjectTitle || '暂无项目');
+        _setText('empty-tip', T.SYSTEM.emptyProjectTip || '点击上方"新建项目"创建一个新项目开始扫码');
+      }
+
+      // 新建项目弹窗
+      if (T.MODAL) {
+        _setText('modal-create-title', T.MODAL.createTitle || '新建项目');
+        _setText('modal-model-label', T.MODAL.modelLabel || '型号');
+        _setText('modal-time-label', T.MODAL.timeLabel || '时间');
+      }
+      if (T.BUTTON) {
+        var cc = document.getElementById('btn-create-confirm');
+        if (cc) cc.textContent = T.BUTTON.createConfirm || '创建并开始扫码';
+        _setText('btn-create-text', T.BUTTON.createProject || '新建项目');
+        _setText('btn-settings-text', T.BUTTON.settings || '设置');
+      }
+
+      // 删除确认弹窗
+      if (T.BUTTON) {
+        _setText('modal-delete-title', T.BUTTON.confirmDelete || '确认删除');
+      }
+      if (T.CLEAR) {
+        var delMsg = document.getElementById('delete-message');
+        if (delMsg) delMsg.textContent = T.CLEAR.bodyConfirmDelete || '确定要删除该项目吗？删除后数据无法恢复。';
+      }
+
+      // 设置弹窗
+      if (T.DUP) {
+        _setText('settings-modal-title', T.DUP.settingsTitle || '设置');
+        _setText('settings-countdown-label', T.DUP.countdownLabel || '重复弹窗倒计时（秒）');
+        _setText('settings-countdown-hint', T.DUP.countdownHint || '当扫描到重复的序列号时，提示弹窗将在该秒数后自动关闭。可输入 1 ~ 300 秒，默认 4 秒。');
+        if (T.BUTTON) {
+          var btnSave = document.getElementById('btn-settings-confirm');
+          if (btnSave) btnSave.textContent = T.BUTTON.save || '保存';
+        }
+      }
+
+      // 版权 + 作者按钮
+      if (T.COPYRIGHT) _setText('copyright-text', T.COPYRIGHT.text || '© 2026 扫码序列号管理 · 版权所有');
+      var btnAuthor = document.getElementById('btn-author');
+      if (btnAuthor && T.AUTHOR) btnAuthor.textContent = T.AUTHOR.btnOpen || '关于作者 / 联系客服';
+
+      // 作者卡片
+      if (T.AUTHOR) {
+        var authorNameEl = document.getElementById('author-name');
+        if (authorNameEl) authorNameEl.textContent = (T.AUTHOR.titleText || '作者') + '：' + (T.AUTHOR.name || '');
+
+        var phoneLine = document.getElementById('author-phone-line');
+        if (phoneLine) phoneLine.innerHTML = '📞 ' + (T.AUTHOR.labelPhone || '电话') + '：<strong>' + (T.AUTHOR.phone || '') + '</strong>';
+
+        var wechatLine = document.getElementById('author-wechat-line');
+        if (wechatLine) wechatLine.innerHTML = '💬 ' + (T.AUTHOR.labelWechat || '微信号') + '：<strong>' + (T.AUTHOR.wechat || '') + '</strong>';
+
+        _setText('qrcode-wechat-label', '💬 ' + (T.AUTHOR.qrcodeWechatTitle || '添加微信'));
+        _setText('qrcode-wechat-desc', T.AUTHOR.qrcodeWechatDesc || '扫码添加作者微信');
+        _setText('qrcode-reward-label', '☕ ' + (T.AUTHOR.qrcodeRewardTitle || '扫码打赏'));
+        _setText('qrcode-reward-desc', T.AUTHOR.qrcodeRewardDesc || '扫码打赏支持作者');
+
+        var btnCopyWx = document.getElementById('btn-copy-wechat');
+        if (btnCopyWx) btnCopyWx.textContent = T.AUTHOR.copyWechat || '复制微信号';
+        var btnCopyPh = document.getElementById('btn-copy-phone');
+        if (btnCopyPh) btnCopyPh.textContent = T.AUTHOR.copyPhone || '复制电话';
+      }
+
+      // 作者卡片的图片资源（头像 / 微信二维码 / 打赏码）—— 从 AUTHOR_ASSETS 读取路径，一处修改两边生效
+      if (T.AUTHOR_ASSETS) {
+        var avatarImg = document.getElementById('author-avatar-img');
+        if (avatarImg && T.AUTHOR_ASSETS.avatar) avatarImg.setAttribute('src', T.AUTHOR_ASSETS.avatar);
+        var wxQrImg = document.getElementById('author-qrcode-img');
+        if (wxQrImg && T.AUTHOR_ASSETS.wechatQrcode) wxQrImg.setAttribute('src', T.AUTHOR_ASSETS.wechatQrcode);
+        var rewardImg = document.getElementById('author-reward-img');
+        if (rewardImg && T.AUTHOR_ASSETS.rewardQrcode) rewardImg.setAttribute('src', T.AUTHOR_ASSETS.rewardQrcode);
+      }
+    }
+
+    // 通用设置：保存/读取到 localStorage
+    var SETTINGS_KEY = 'serial-scanner:settings';
+    function getSettings() {
+      try {
+        var raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return { duplicateCountdown: 4 };
+        var obj = JSON.parse(raw);
+        if (typeof obj !== 'object' || obj === null) return { duplicateCountdown: 4 };
+        var cd = parseInt(obj.duplicateCountdown, 10);
+        if (!isFinite(cd) || cd < 1) cd = 4;
+        if (cd > 300) cd = 300;
+        return { duplicateCountdown: cd };
+      } catch (e) {
+        return { duplicateCountdown: 4 };
+      }
+    }
+    function saveSettings(s) {
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+        return true;
+      } catch (e) { return false; }
+    }
+    function openSettings() {
+      var s = getSettings();
+      document.getElementById('settings-countdown').value = s.duplicateCountdown;
+      document.getElementById('settings-modal').style.display = 'block';
+      setTimeout(function(){ document.getElementById('settings-countdown').focus(); }, 50);
+    }
+    function closeSettings() {
+      document.getElementById('settings-modal').style.display = 'none';
+    }
+    function confirmSettings() {
+      var val = document.getElementById('settings-countdown').value;
+      var cd = parseInt(val, 10);
+      if (!isFinite(cd) || cd < 1 || cd > 300) {
+        var invalidMsg = (window.TEXTS && window.TEXTS.DUP && window.TEXTS.DUP.countdownInvalid) || '请输入 1 到 300 之间的整数秒数';
+        showToast('error', invalidMsg);
+        return;
+      }
+      saveSettings({ duplicateCountdown: cd });
+      closeSettings();
+      var savedMsg = (window.TEXTS && window.TEXTS.DUP && window.TEXTS.DUP.countdownSaved) ? (window.TEXTS.DUP.countdownSaved + cd + ' 秒') : ('已保存，重复弹窗倒计时 ' + cd + ' 秒');
+      showToast('success', savedMsg);
+    }
+
+    var STORAGE_KEY = 'serial-scanner:data';
+    var CURRENT_PROJECT_KEY = 'serial-scanner:current-project';
+    var state = { projects: {}, currentProjectId: null };
+    var deleteTargetId = null;
+    var searchKeyword = '';
+
+    function loadData() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { projects: {}, currentProjectId: null };
+        var data = JSON.parse(raw);
+        return {
+          projects: data.projects || {},
+          currentProjectId: data.currentProjectId
+        };
+      } catch (e) {
+        console.error('读取数据失败:', e);
+        return { projects: {}, currentProjectId: null };
+      }
+    }
+
+    function saveData() {
+      try {
+        var data = {
+          currentProjectId: state.currentProjectId,
+          projects: state.projects
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return true;
+      } catch (e) {
+        console.error('保存失败:', e);
+        return false;
+      }
+    }
+
+    function generateId() {
+      return 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function formatTime(iso) {
+      try {
+        var d = new Date(iso);
+        var pad = function(n) { return String(n).length < 2 ? '0' + n : String(n); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
+               pad(d.getHours()) + ':' + pad(d.getMinutes());
+      } catch (e) { return iso; }
+    }
+
+    function pad(n) { return String(n).length < 2 ? '0' + n : String(n); }
+    function formatDateLocal(date) {
+      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
+    function showToast(type, message) {
+      var toast = document.getElementById('toast');
+      // 先强制重置再设置 class，避免 className 合并出现短暂无背景状态
+      toast.className = 'toast';
+      toast.textContent = message;
+      // 强制 reflow，确保 class 变更生效
+      void toast.offsetWidth;
+      toast.className = 'toast ' + type + ' show';
+      setTimeout(function() {
+        // 移除 show 触发淡出，但保留 type 背景色，避免背景色丢失瞬间的黑色闪现
+        toast.className = 'toast ' + type;
+      }, 2500);
+    }
+
+    function createProject(model, dateStr) {
+      var now = new Date().toISOString();
+      var createdTime = dateStr ? new Date(dateStr).toISOString() : now;
+      var name = model + ' ' + formatTime(createdTime).split(' ')[0];
+      var newProj = {
+        id: generateId(),
+        model: model,
+        projectTime: createdTime,
+        name: name,
+        createdAt: now,
+        lastModifiedAt: now,
+        serials: []
+      };
+      state.projects[newProj.id] = newProj;
+      state.currentProjectId = newProj.id;
+      saveData();
+      return newProj;
+    }
+
+    function deleteProject(projectId) {
+      delete state.projects[projectId];
+      var remaining = Object.keys(state.projects);
+      if (state.currentProjectId === projectId) {
+        state.currentProjectId = remaining.length ? remaining[0] : null;
+      }
+      saveData();
+    }
+
+    function goToScanning(projectId) {
+      state.currentProjectId = projectId;
+      localStorage.setItem(CURRENT_PROJECT_KEY, projectId);
+      saveData();
+      window.location.href = 'scan.html';
+    }
+
+    function renderProjects() {
+      var list = document.getElementById('project-list');
+      var empty = document.getElementById('empty-state');
+      var projectIds = Object.keys(state.projects);
+
+      if (projectIds.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+
+      // 搜索过滤
+      var keyword = (searchKeyword || '').trim().toLowerCase();
+      var hasKeyword = keyword.length > 0;
+      var searchEmptyEl = document.getElementById('search-empty');
+      var filteredIds = projectIds;
+      if (hasKeyword) {
+        filteredIds = projectIds.filter(function(pid) {
+          var proj = state.projects[pid];
+          var model = (proj.model || '').toLowerCase();
+          var name = (proj.name || '').toLowerCase();
+          return model.indexOf(keyword) !== -1 || name.indexOf(keyword) !== -1;
+        });
+      }
+
+      empty.style.display = 'none';
+      if (searchEmptyEl) searchEmptyEl.remove();
+
+      if (hasKeyword && filteredIds.length === 0) {
+        list.innerHTML = '';
+        var emptyBox = document.createElement('div');
+        emptyBox.className = 'search-empty';
+        emptyBox.id = 'search-empty';
+        emptyBox.innerHTML =
+          '<div class="icon">🔍</div>' +
+          '<h3>未找到匹配的项目</h3>' +
+          '<p>未找到包含 "' + searchKeyword + '" 的项目，试试其他关键词</p>';
+        list.parentNode.insertBefore(emptyBox, list);
+        return;
+      }
+
+      // 按最后修改时间倒序排列
+      filteredIds.sort(function(a, b) {
+        var timeA = state.projects[a].lastModifiedAt || '';
+        var timeB = state.projects[b].lastModifiedAt || '';
+        return timeB.localeCompare(timeA);
+      });
+
+      list.innerHTML = '';
+      filteredIds.forEach(function(pid) {
+        var proj = state.projects[pid];
+        var isCurrent = pid === state.currentProjectId;
+        var serialCount = proj.serials ? proj.serials.length : 0;
+        var timeStr = formatTime(proj.projectTime).split(' ')[0];
+        var unnamed = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.unnamedProject) || '未命名';
+        var currentBadge = (window.TEXTS && window.TEXTS.BUTTON && window.TEXTS.BUTTON.currentProject) || '当前项目';
+        var scanLabel = (window.TEXTS && window.TEXTS.PROJECT && window.TEXTS.PROJECT.scanCount) || '已扫描 ';
+        var scanSuffix = (window.TEXTS && window.TEXTS.PROJECT && window.TEXTS.PROJECT.serialCountSuffix) || ' 条序列号';
+        var startScan = (window.TEXTS && window.TEXTS.BUTTON && window.TEXTS.BUTTON.startScan) || '开始扫码';
+        var card = document.createElement('div');
+        card.className = 'project-card' + (isCurrent ? ' current' : '');
+        card.innerHTML =
+          '<div class="project-card-header">' +
+            '<div class="project-model">' + (proj.model || unnamed) + '</div>' +
+            (isCurrent ? '<span class="project-badge">' + currentBadge + '</span>' : '') +
+          '</div>' +
+          '<div class="project-info">' +
+            '<div class="project-info-item"><span class="icon">📅</span><span>' + timeStr + '</span></div>' +
+            '<div class="project-info-item"><span class="icon">📊</span><span>' + scanLabel + serialCount + scanSuffix + '</span></div>' +
+          '</div>' +
+          '<div class="project-card-actions">' +
+            '<button class="btn-card-scan" onclick="goToScanning(\'' + pid + '\')">🎯 ' + startScan + '</button>' +
+            '<button class="btn-card-delete" onclick="showDeleteModal(\'' + pid + '\')">🗑️</button>' +
+          '</div>';
+        list.appendChild(card);
+      });
+    }
+
+    function openModal() {
+      var m = document.getElementById('new-project-modal');
+      m.style.display = 'block';
+      // 强制 reflow 后加 show 类，触发动画
+      void m.offsetWidth;
+      m.classList.add('show');
+      document.getElementById('input-model').value = '';
+      document.getElementById('input-date').value = formatDateLocal(new Date());
+      setTimeout(function() { document.getElementById('input-model').focus(); }, 100);
+    }
+
+    function closeModal(instant) {
+      var m = document.getElementById('new-project-modal');
+      if (instant) {
+        m.classList.remove('show');
+        m.style.display = 'none';
+        return;
+      }
+      m.classList.remove('show');
+      // 等待淡出动画结束后再隐藏
+      setTimeout(function() {
+        if (!m.classList.contains('show')) {
+          m.style.display = 'none';
+        }
+      }, 200);
+    }
+
+    function confirmCreate() {
+      var model = document.getElementById('input-model').value.trim();
+      var date = document.getElementById('input-date').value;
+
+      if (!model) {
+        var modelRequired = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.modelRequired) || '请输入型号';
+        showToast('error', modelRequired);
+        document.getElementById('input-model').focus();
+        return;
+      }
+      if (!date) {
+        var timeRequired = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.timeRequired) || '请选择时间';
+        showToast('error', timeRequired);
+        return;
+      }
+
+      var newProj = createProject(model, date);
+      closeModal(true);
+      var projCreated = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.projectCreated) || '已创建项目';
+      showToast('success', projCreated + '：' + newProj.model);
+      renderProjects();
+      // 创建后自动跳转到扫码页面
+      setTimeout(function() { goToScanning(newProj.id); }, 500);
+    }
+
+    function showDeleteModal(projectId) {
+      event.stopPropagation();
+      deleteTargetId = projectId;
+      var proj = state.projects[projectId];
+      var unnamed = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.unnamedProject) || '未命名';
+      var delMsgPrefix = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.confirmDeleteProject) || '确定要删除项目';
+      document.getElementById('delete-message').textContent =
+        delMsgPrefix + ' "' + (proj.model || unnamed) + '" 吗？删除后数据无法恢复。';
+      var m = document.getElementById('delete-modal');
+      m.style.display = 'block';
+      void m.offsetWidth;
+      m.classList.add('show');
+    }
+
+    function closeDeleteModal(instant) {
+      var m = document.getElementById('delete-modal');
+      if (instant) {
+        m.classList.remove('show');
+        m.style.display = 'none';
+        deleteTargetId = null;
+        return;
+      }
+      m.classList.remove('show');
+      setTimeout(function() {
+        if (!m.classList.contains('show')) {
+          m.style.display = 'none';
+        }
+        deleteTargetId = null;
+      }, 200);
+    }
+
+    function confirmDelete() {
+      if (!deleteTargetId) return;
+      var proj = state.projects[deleteTargetId];
+      var unnamed = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.unnamedProject) || '未命名';
+      var projDeleted = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.projectDeleted) || '已删除项目';
+      deleteProject(deleteTargetId);
+      closeDeleteModal(true);
+      showToast('info', projDeleted + '：' + (proj.model || unnamed));
+      renderProjects();
+    }
+
+    // 键盘事件
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+        closeDeleteModal();
+        closeAuthor();
+        closeSettings();
+      }
+      if (e.key === 'Enter') {
+        var settingsDisplay = (document.getElementById('settings-modal') || {}).style;
+        if (settingsDisplay && settingsDisplay.display === 'block') {
+          confirmSettings();
+          return;
+        }
+        var newProj = document.getElementById('new-project-modal');
+        if (newProj && newProj.classList.contains('show')) {
+          confirmCreate();
+        }
+      }
+    });
+
+    // 作者卡片相关
+    function openAuthor() {
+      var m = document.getElementById('author-modal');
+      if (m) m.classList.remove('hidden');
+    }
+    function closeAuthor() {
+      var m = document.getElementById('author-modal');
+      if (m) m.classList.add('hidden');
+    }
+    function copyText(text, label) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            var copiedPrefix = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.copiedPrefix) || '已复制';
+            showToast('success', copiedPrefix + (label || '') + '：' + text);
+          });
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          var copiedPrefix = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.copiedPrefix) || '已复制';
+          showToast('success', copiedPrefix + (label || '') + '：' + text);
+        }
+      } catch (e) {
+        var failed = (window.TEXTS && window.TEXTS.TOAST && window.TEXTS.TOAST.copyFailed) || '复制失败';
+        showToast('error', failed);
+      }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 先把文字写进 DOM
+      applyTextsToHome();
+
+      var data = loadData();
+      state.projects = data.projects || {};
+      state.currentProjectId = data.currentProjectId;
+      renderProjects();
+
+      document.getElementById('btn-create').addEventListener('click', openModal);
+      document.getElementById('btn-settings').addEventListener('click', openSettings);
+
+      // 搜索框：实时过滤
+      var searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        var searchTimer = null;
+        searchInput.addEventListener('input', function(e) {
+          searchKeyword = e.target.value;
+          if (searchTimer) clearTimeout(searchTimer);
+          searchTimer = setTimeout(function() {
+            renderProjects();
+          }, 200);
+        });
+      }
+
+      // 通过 URL hash 自动打开弹窗
+      setTimeout(function () {
+        var h = (location.hash || '').toLowerCase();
+        if (h === '#settings') openSettings();
+        else if (h === '#new') openModal();
+      }, 0);
+
+      // 作者卡片按钮
+      document.getElementById('btn-author').addEventListener('click', openAuthor);
+      var wechatVal = (window.TEXTS && window.TEXTS.AUTHOR && window.TEXTS.AUTHOR.wechat) || 'XiaLL68';
+      var wechatLabel = (window.TEXTS && window.TEXTS.AUTHOR && window.TEXTS.AUTHOR.labelWechat) || '微信号';
+      var phoneVal = (window.TEXTS && window.TEXTS.AUTHOR && window.TEXTS.AUTHOR.phone) || '15960360875';
+      var phoneLabel = (window.TEXTS && window.TEXTS.AUTHOR && window.TEXTS.AUTHOR.labelPhone) || '电话';
+      document.getElementById('btn-copy-wechat').addEventListener('click', function() { copyText(wechatVal, wechatLabel); });
+      document.getElementById('btn-copy-phone').addEventListener('click', function() { copyText(phoneVal, phoneLabel); });
+      // 点击作者卡片遮罩关闭
+      document.getElementById('author-modal').addEventListener('click', function(e) {
+        if (e.target && e.target.getAttribute && e.target.getAttribute('data-close-author') === '1') {
+          closeAuthor();
+        }
+      });
+      // 作者卡片二维码图片点击放大
+      document.getElementById('author-qrcode-img').addEventListener('click', function() {
+        var src = this.getAttribute('src');
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(17,24,39,0.85);z-index:500;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+        var bigImg = document.createElement('img');
+        bigImg.setAttribute('src', src);
+        bigImg.style.cssText = 'max-width:80vw;max-height:80vh;border-radius:12px;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.3);';
+        overlay.appendChild(bigImg);
+        overlay.addEventListener('click', function() { try { document.body.removeChild(overlay); } catch(_) {} });
+        document.body.appendChild(overlay);
+      });
+    });
+  </script>
+</body>
+</html>
