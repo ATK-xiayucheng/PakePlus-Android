@@ -128,7 +128,11 @@
     countdownLabel: '重复弹窗倒计时（秒）',
     countdownHint: '当扫描到重复的序列号时，提示弹窗将在该秒数后自动关闭。可输入 1 ~ 300 秒，默认 4 秒。',
     countdownInvalid: '请输入 1 到 300 之间的整数秒数',
-    countdownSaved: '已保存，重复弹窗倒计时 '
+    countdownSaved: '已保存，重复弹窗倒计时 ',
+    focusReturnLabel: '光标自动吸附延迟（秒）',
+    focusReturnHint: '鼠标点击其他地方后，光标延迟多少秒自动回到输入框。设为 0 则关闭自动吸附，可输入 0 ~ 300 秒，默认 2 秒。',
+    focusReturnInvalid: '请输入 0 到 300 之间的整数秒数',
+    focusReturnSaved: '已保存，光标自动吸附延迟 '
   };
 
   // ---------- Toast 通用文字 ----------
