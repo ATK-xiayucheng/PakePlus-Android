@@ -101,6 +101,8 @@
     var modalResolver = null;
     var newProjectResolver = null;
     var historyResolver = null;
+    var focusReturnTimer = null;
+    var focusAutoReturnDelay = 3;
 
     /* ---------------- 工具函数 ---------------- */
 
@@ -116,6 +118,58 @@
     function setText(node, text) { if (node) node.textContent = text; }
     function setDisplay(node, v) { if (node) node.style.display = v; }
     function setClass(node, cls) { if (node) node.className = cls; }
+
+    function isInteractiveElement(el) {
+      if (!el) return false;
+      var tag = (el.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'button' || tag === 'a' || tag === 'textarea' || tag === 'select') return true;
+      if (el.getAttribute && el.getAttribute('contenteditable') === 'true') return true;
+      return false;
+    }
+
+    function getFocusReturnDelay() {
+      try {
+        var raw = localStorage.getItem('serial-scanner:settings');
+        if (!raw) return 2;
+        var obj = JSON.parse(raw);
+        if (!obj || typeof obj !== 'object') return 2;
+        var d = parseInt(obj.focusAutoReturnDelay, 10);
+        if (!isFinite(d) || d < 0) return 2;
+        if (d > 300) return 300;
+        return d;
+      } catch (e) {
+        return 2;
+      }
+    }
+
+    function ensureInputFocus() {
+      if (!els.input) return;
+      if (document.activeElement !== els.input) {
+        try {
+          els.input.focus();
+          els.input.select();
+        } catch (e) {
+          console.warn('焦点恢复失败:', e);
+        }
+      }
+    }
+
+    function cancelFocusReturn() {
+      if (focusReturnTimer) {
+        clearTimeout(focusReturnTimer);
+        focusReturnTimer = null;
+      }
+    }
+
+    function scheduleFocusReturn() {
+      cancelFocusReturn();
+      var delay = getFocusReturnDelay();
+      if (delay <= 0) return;
+      focusReturnTimer = setTimeout(function () {
+        focusReturnTimer = null;
+        ensureInputFocus();
+      }, delay * 1000);
+    }
 
     /* ---------------- 项目存储管理 ---------------- */
 
@@ -304,7 +358,10 @@
         (function (serial) {
           btn.addEventListener('click', function () {
             try {
-              deleteOne(serial);
+              var confirmMsg = _t('CLEAR', 'bodyConfirmDeleteOne', '确定要删除这条序列号吗？') + '：' + serial;
+              showConfirm(confirmMsg).then(function (ok) {
+                if (ok) deleteOne(serial);
+              });
             } catch (e) {
               console.error('删除失败:', e);
               showToast('error', _t('TOAST', 'deleteFailed', '删除失败') + '：' + (e.message || e));
@@ -324,7 +381,7 @@
     function refresh() {
       renderProjectName();
       renderList();
-      if (els.input) els.input.focus();
+      setTimeout(ensureInputFocus, 30);
     }
 
     function setStatus(type, message) {
@@ -385,6 +442,7 @@
         clearInterval(dupCountdownTimer);
         dupCountdownTimer = null;
       }
+      setTimeout(ensureInputFocus, 50);
     }
 
     if (els.dupClose) {
@@ -556,10 +614,10 @@
 
     function submitCurrent() {
       try {
-        // 没有项目时，提示先建项目
         if (!getCurrentProject()) {
           showToast('error', _t('STATUS', 'noProject', '请先点击"+ 新建项目"后再扫码'));
           if (els.input) els.input.value = '';
+          if (els.input) els.input.focus();
           return;
         }
         var value = els.input ? els.input.value : '';
@@ -584,10 +642,13 @@
           saveData();
           renderList();
         }
+        // 提交完成后重新聚焦输入框，确保扫码枪能连续扫描
+        setTimeout(ensureInputFocus, 50);
       } catch (e) {
         console.error('提交异常:', e);
         setStatus('error', _t('STATUS', 'errorHint', '异常') + '：' + (e.message || e));
         showToast('error', _t('TOAST', 'submitException', '操作异常'));
+        setTimeout(ensureInputFocus, 50);
       }
     }
 
@@ -596,11 +657,15 @@
         var list = getCurrentList();
         list = list.filter(function (it) { return it.serial !== serial; });
         setCurrentList(list);
-        saveData().then(function () { renderList(); });
+        saveData().then(function () { 
+          renderList(); 
+          setTimeout(ensureInputFocus, 30);
+        });
         showToast('info', _t('TOAST', 'deletedOne', '已删除 1 条记录'));
       } catch (e) {
         console.error('删除异常:', e);
         showToast('error', _t('TOAST', 'deleteFailed', '删除失败'));
+        setTimeout(ensureInputFocus, 30);
       }
     }
 
@@ -612,9 +677,11 @@
         saveData();
         renderList();
         showToast('info', _t('TOAST', 'clearedAll', '已清空所有记录'));
+        setTimeout(ensureInputFocus, 30);
       } catch (e) {
         console.error('清空异常:', e);
         showToast('error', _t('TOAST', 'clearFailed', '清空失败'));
+        setTimeout(ensureInputFocus, 30);
       }
     }
 
@@ -687,9 +754,11 @@
         } catch (e) {
           showToast('error', _t('TOAST', 'exportBrowserBlocked', '浏览器阻止了下载'));
         }
+        setTimeout(ensureInputFocus, 50);
       } catch (e) {
         console.error('导出异常:', e);
         showToast('error', _t('TOAST', 'exportFailed', '导出失败'));
+        setTimeout(ensureInputFocus, 50);
       }
     }
 
@@ -871,7 +940,35 @@
       }
     });
 
-    window.addEventListener('focus', function () { if (els.input) els.input.focus(); });
+    window.addEventListener('focus', function () {
+      if (getFocusReturnDelay() > 0) {
+        ensureInputFocus();
+      }
+    });
+
+    els.input.addEventListener('focus', function () {
+      cancelFocusReturn();
+    });
+
+    els.input.addEventListener('focusout', function (e) {
+      if (!els.input) return;
+      var target = e.relatedTarget;
+      if (target && (target.classList && target.classList.contains('modal-mask'))) {
+        return;
+      }
+      scheduleFocusReturn();
+    });
+
+    els.input.addEventListener('blur', function () {
+      scheduleFocusReturn();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!els.input) return;
+      if (e.target === els.input) return;
+      if (document.activeElement === els.input) return;
+      scheduleFocusReturn();
+    });
 
     /* ---------------- 项目相关事件 ---------------- */
 
@@ -1147,7 +1244,7 @@
 
       setStatus('idle', _t('STATUS', 'idleHint', '请在下方输入序列号，按回车提交（扫码枪也是回车提交）'));
       refresh();
-      if (els.input) els.input.focus();
+      ensureInputFocus();
 
       // 菜单：文件 → 导出 Excel
       if (inElectron && window.serialAPI && typeof window.serialAPI.onMenuExportExcel === 'function') {
