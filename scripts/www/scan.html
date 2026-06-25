@@ -194,7 +194,7 @@
       if (titleEl) titleEl.textContent = SYSTEM.name || '扫码序列号管理';
       var scanTitleEl = document.getElementById('scan-title');
       if (scanTitleEl) {
-        scanTitle.innerHTML = (SYSTEM.name || '扫码序列号管理') + ' <small id="env-tag"></small>';
+        scanTitleEl.innerHTML = (SYSTEM.name || '扫码序列号管理') + ' <small id="env-tag"></small>';
       }
 
       // 顶部状态文字
@@ -404,6 +404,6 @@
       }
     }
   </script>
-  <script src="renderer.js"></script>
+  <script src="renderer.js?v=5"></script>
 </body>
 </html>
