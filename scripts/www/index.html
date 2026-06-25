@@ -484,6 +484,11 @@
         <input id="settings-countdown" type="number" class="input-number" min="1" max="300" step="1" />
         <div id="settings-countdown-hint" class="form-help">当扫描到重复的序列号时，提示弹窗将在该秒数后自动关闭。可输入 1 ~ 300 秒，默认 4 秒。</div>
       </div>
+      <div class="form-row">
+        <label class="form-label"><span id="settings-focus-return-label">光标自动吸附延迟（秒）</span><span class="required"> *</span></label>
+        <input id="settings-focus-return" type="number" class="input-number" min="0" max="300" step="1" />
+        <div id="settings-focus-return-hint" class="form-help">鼠标点击其他地方后，光标延迟多少秒自动回到输入框。设为 0 则关闭自动吸附，可输入 0 ~ 300 秒，默认 2 秒。</div>
+      </div>
       <div class="form-actions-row">
         <button class="btn-secondary" onclick="closeSettings()">取消</button>
         <button id="btn-settings-confirm" class="btn-primary" onclick="confirmSettings()">保存</button>
@@ -603,6 +608,8 @@
         _setText('settings-modal-title', T.DUP.settingsTitle || '设置');
         _setText('settings-countdown-label', T.DUP.countdownLabel || '重复弹窗倒计时（秒）');
         _setText('settings-countdown-hint', T.DUP.countdownHint || '当扫描到重复的序列号时，提示弹窗将在该秒数后自动关闭。可输入 1 ~ 300 秒，默认 4 秒。');
+        _setText('settings-focus-return-label', T.DUP.focusReturnLabel || '光标自动吸附延迟（秒）');
+        _setText('settings-focus-return-hint', T.DUP.focusReturnHint || '鼠标点击其他地方后，光标延迟多少秒自动回到输入框。设为 0 则关闭自动吸附，可输入 0 ~ 300 秒，默认 2 秒。');
         if (T.BUTTON) {
           var btnSave = document.getElementById('btn-settings-confirm');
           if (btnSave) btnSave.textContent = T.BUTTON.save || '保存';
@@ -652,15 +659,18 @@
     function getSettings() {
       try {
         var raw = localStorage.getItem(SETTINGS_KEY);
-        if (!raw) return { duplicateCountdown: 4 };
+        if (!raw) return { duplicateCountdown: 4, focusAutoReturnDelay: 2 };
         var obj = JSON.parse(raw);
-        if (typeof obj !== 'object' || obj === null) return { duplicateCountdown: 4 };
+        if (typeof obj !== 'object' || obj === null) return { duplicateCountdown: 4, focusAutoReturnDelay: 2 };
         var cd = parseInt(obj.duplicateCountdown, 10);
         if (!isFinite(cd) || cd < 1) cd = 4;
         if (cd > 300) cd = 300;
-        return { duplicateCountdown: cd };
+        var fd = parseInt(obj.focusAutoReturnDelay, 10);
+        if (!isFinite(fd) || fd < 0) fd = 2;
+        if (fd > 300) fd = 300;
+        return { duplicateCountdown: cd, focusAutoReturnDelay: fd };
       } catch (e) {
-        return { duplicateCountdown: 4 };
+        return { duplicateCountdown: 4, focusAutoReturnDelay: 2 };
       }
     }
     function saveSettings(s) {
@@ -672,6 +682,7 @@
     function openSettings() {
       var s = getSettings();
       document.getElementById('settings-countdown').value = s.duplicateCountdown;
+      document.getElementById('settings-focus-return').value = s.focusAutoReturnDelay;
       document.getElementById('settings-modal').style.display = 'block';
       setTimeout(function(){ document.getElementById('settings-countdown').focus(); }, 50);
     }
@@ -686,10 +697,18 @@
         showToast('error', invalidMsg);
         return;
       }
-      saveSettings({ duplicateCountdown: cd });
+      var fdVal = document.getElementById('settings-focus-return').value;
+      var fd = parseInt(fdVal, 10);
+      if (!isFinite(fd) || fd < 0 || fd > 300) {
+        var fdInvalidMsg = (window.TEXTS && window.TEXTS.DUP && window.TEXTS.DUP.focusReturnInvalid) || '请输入 0 到 300 之间的整数秒数';
+        showToast('error', fdInvalidMsg);
+        return;
+      }
+      saveSettings({ duplicateCountdown: cd, focusAutoReturnDelay: fd });
       closeSettings();
       var savedMsg = (window.TEXTS && window.TEXTS.DUP && window.TEXTS.DUP.countdownSaved) ? (window.TEXTS.DUP.countdownSaved + cd + ' 秒') : ('已保存，重复弹窗倒计时 ' + cd + ' 秒');
-      showToast('success', savedMsg);
+      var fdSavedMsg = (window.TEXTS && window.TEXTS.DUP && window.TEXTS.DUP.focusReturnSaved) ? (window.TEXTS.DUP.focusReturnSaved + fd + ' 秒') : ('，光标自动吸附延迟 ' + fd + ' 秒');
+      showToast('success', savedMsg + fdSavedMsg);
     }
 
     var STORAGE_KEY = 'serial-scanner:data';
